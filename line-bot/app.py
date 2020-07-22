@@ -112,6 +112,7 @@ def handle_message(event):
         else:
             reply(f'You input a question\n{message.text}')
             handle_message.input_['qas'].append({'question': message.text})
+            #print({'question': message.text})
 
             # run model
             t1 = time.time()
