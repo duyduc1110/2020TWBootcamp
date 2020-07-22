@@ -32,7 +32,7 @@ train_args = {
     "vocab_size": 30522
 }
 
-question_type = [
+question_list = [
                 'what are we going to do?', 
                 'what day?', 
                 'what time?', 
