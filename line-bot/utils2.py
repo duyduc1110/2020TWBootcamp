@@ -31,6 +31,7 @@ def get_qa(context, question_list, model=None):
     ----------
     context : Str.
     question_list : List
+    model :simpletransformer's model
 
     Returns
     -------

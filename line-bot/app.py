@@ -32,6 +32,8 @@ from utils import input_context_msg, input_question_msg, input_answer_msg, input
 from utils import input_template as input_
 from utils import question_limit
 
+from utils2 import CreateModel, get_qa
+from config import train_args, question_list
 
 # setup logger
 logging.basicConfig(
@@ -50,16 +52,19 @@ for env_k, env_v in os.environ.items():
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--model', help='Select model', default='bert', required=False, choices=['bert', 'bidaf'])
 parser.add_argument('--example', help='Use example to test model', action='store_true')
+
+parser.add_argument('--model_type', default= 'bert')
+parser.add_argument('--model_path', default= 'outputs/' )
+
 args, unknown = parser.parse_known_args()
 
 # setup app
 app = Flask(__name__)
-if args.model == 'bert':
-    app.model = init_bert()
-    app.predict = run_bert
-elif args.model == 'bidaf':
-    app.model = init_bidaf()
-    app.predict = run_bidaf
+
+app.model = CreateModel(args.model_type, args.model_path)
+app.predict = get_qa
+
+
 
 # load example
 if args.example:
@@ -102,32 +107,27 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=text))
 
     def handle_q():
-        num_qa_ = len(handle_message.answers)
-        if num_qa_ >= question_limit:
-            reply('You have already input 3 questions')
-            handle_message.state_ = 'init'
-        elif not check_input_valid(handle_message.input_):
+
+        if not check_input_valid(handle_message.input_):
             reply('Please input context first')
             handle_message.state_ = 'init'
         else:
-            reply(f'You input a question\n{message.text}')
-            handle_message.input_['qas'].append({'question': message.text})
-            #print({'question': message.text})
-
+            for q in question_list:
+                handle_message.input_['qas'].append({'question': q})
             # run model
             t1 = time.time()
             handle_message.state_ = 'processing'
-            answers = app.predict(handle_message.input_, app.model)
-            answers = answers.get('1')
+            context = handle_message.input_['context']
+            answers = get_qa(context, question_list, app.model)
             logger.debug(f'Running time of model: {time.time() - t1} sec')
             logger.debug(f'This answer is \'{answers}\'')
 
             # save to answer list
-            qa_id = len(handle_message.answers) + 1
-            handle_message.answers.append(f'Q{qa_id}: {message.text}\nA{qa_id}: {answers}\n')
+            for idx, qes in enumerate(question_list):
+                qa_id = idx+1
+                ans = answers[idx]
+                handle_message.answers.append(f'Q{qa_id}: {qes}\nA{qa_id}: {ans}\n')
 
-            # release question list
-            handle_message.input_['qas'].clear()
 
             handle_message.state_ = 'question'
 
@@ -151,17 +151,9 @@ def handle_message(event):
             reply(f'You input a context\n{message.text}')
             handle_message.input_['context'] = message.text
             handle_message.state_ = 'init'
-
-    elif handle_message.state_ == 'question':
-        if message.text == input_reset_msg or message.text == input_answer_msg:
-            pass
-        elif is_input_command(message.text):
-            reply(f'You input a command, please re-input')
-            return
-        else:
-            handle_q()
     else:
         pass
+    
     logger.debug(f'Current input after state changes:\n{handle_message.input_}')
 
     # Reply message
@@ -176,15 +168,16 @@ def handle_message(event):
         handle_message.state_ = 'context'
 
     elif message.text == input_question_msg:
-        num_qa = len(handle_message.answers)
-        if num_qa >= question_limit:
-            reply('You have already input 3 questions')
-            handle_message.state_ = 'init'
-        elif not check_input_valid(handle_message.input_):
+        
+        if not check_input_valid(handle_message.input_):
             reply('Please input context first')
+            handle_message.state_ = 'init'
+        
         else:
-            reply('Please start to input questions')
             handle_message.state_ = 'question'
+            reply(f'computing...')
+            handle_q()
+            reply(f'Done!')
 
     elif message.text == input_answer_msg:
         if args.example:
