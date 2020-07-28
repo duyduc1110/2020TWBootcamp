@@ -5,9 +5,17 @@ import torch
 import torch.nn as nn
 import ast
 import tqdm
+import argparse
 
 from transformers import AutoConfig, AutoTokenizer, BertForQuestionAnswering
 from torch.utils.data import DataLoader, Dataset
+
+
+parse = argparse.ArgumentParser()
+parse.add_argument('--text', type=str, help='Conversation text')
+parse.add_argument('--state_dict', type=str, help='State dict path')
+
+args = parse.parse_args()
 
 
 class SashimiDataset(Dataset):
@@ -29,15 +37,14 @@ class SashimiDataset(Dataset):
         label = torch.LongTensor(label)
         
         plus_idx = (inputs['input_ids'] == 102).nonzero()[0,1]
-        if label.tolist() != [0,0]:
-            label += plus_idx
+        label += plus_idx
         
         return inputs, label
         
         
 def get_data(path, sep=',', index_col=None):
     data = pd.read_csv(path, sep=sep, index_col=index_col)
-    #data['Text'] = [ast.literal_eval(data.Text[i])[0] for i in range(data.shape[0])]
+    data['Text'] = [ast.literal_eval(data.Text[i])[0] for i in range(data.shape[0])]
     data['Label'] = [ast.literal_eval(data.Label[i]) for i in range(data.shape[0])]
     return data
 
@@ -53,21 +60,20 @@ if __name__ == '__main__':
         'What time?',
         'Where to go?'
     ]
-
-    data = get_data('./data/updated3500s.csv', sep='\t')
-    dataset = SashimiDataset(data)
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=2)
     
+    TEXT = args.text
+
+    """
+    data = get_data('./data/training_data.csv', sep='\t')
+    dataset = SashimiDataset(data)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
     
     loss_fn = nn.CrossEntropyLoss()
-    num_epoch = 5
-    lr = 1e-5
-    optimizer = torch.optim.AdamW(model.parameters(), lr)
+    optimizer = torch.optim.AdamW(model.parameters(), 2e-5)
     
     model.cuda()
     model.train()
-
-    for epoch in range(num_epoch):
+    for epoch in range(3):
         total_loss = 0
         
         for inputs, label in tqdm.tqdm(dataloader):
@@ -77,16 +83,30 @@ if __name__ == '__main__':
 
             optimizer.zero_grad()
             outputs = model(**inputs)
-            predict = torch.stack(outputs, -1)
+            start, end = outputs[0], outputs[1]
+            label = label.cuda()
 
-            loss = loss_fn(predict, label.cuda())
+            loss = loss_fn(start, label[:,0]) + loss_fn(end, label[:,1])
             loss.backward()
             optimizer.step()
             
             total_loss += loss.item()
             
         print(f'Train loss {total_loss}')
-
-torch.save(model.state_dict(), 'e3lr2e5.pth')
         
-    torch.save(model.state_dict(), f'e{num_epoch}lr{lr}.pth')
+    torch.save(model.state_dict(), 'e3le2e5.pth')
+    """
+    
+    sd = torch.load(args.state_dict)
+    model.load_state_dict(sd)
+    model.cuda()
+    model.eval()
+    
+    for qs in QUESTIONS:
+        inputs = tokenizer(qs, TEXT, return_tensors='pt')
+        for k in inputs.keys():
+            inputs[k] = inputs[k].squeeze(1).cuda()
+        with torch.no_grad():
+            outputs = model(**inputs)
+            start, end = torch.argmax(outputs[0]), torch.argmax(outputs[1])
+            print(f"{qs}\t{start}\t{end}\t{tokenizer.decode(inputs['input_ids'][0,start:end+1].tolist())}")
