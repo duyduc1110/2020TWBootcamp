@@ -1,5 +1,5 @@
 *outputs/
-cache_dir/
+*cache_dir/
 result/
 .DS_Store
 *.json
@@ -20,7 +20,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
-develop-eggs/
+evelop-eggs/
 dist/
 downloads/
 eggs/
