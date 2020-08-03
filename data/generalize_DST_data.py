@@ -59,8 +59,9 @@ day = ['today',
  'on Friday',
  'on Saturday']
 
-day_unit = ['day', 'month', ' week']
-day_list = [str(i+1) + ' ' + unit for unit in day_unit for i in range(5)]
+day_unit = ['day', 'month', ' week', 'year']
+day_list = [str(i+1) + ' ' + unit for unit in day_unit for i in range(10)]
+day_list += [i + ' ' + unit for unit in day_unit for i in ['one, two, three, four, five, six, seven, eihgt, nine, ten, eleven, twelve']]
 
 delay_head = [ 'later', 'after']
 
@@ -335,19 +336,20 @@ def Gen_Classfier_Data(rows):
 
     # 80% training data, 20% test data
     # Domain lassifier
-    Domain_classifier.iloc[:row_end_for_Domain_training].to_csv('Domain_classifier_train.csv', index=False)
-    Domain_classifier.iloc[row_end_for_Domain_training:].to_csv('Domain_classifier_test.csv', index=False)
+    #Domain_classifier.iloc[:row_end_for_Domain_training].to_csv('Domain_classifier_train.csv', index=False)
+    #Domain_classifier.iloc[row_end_for_Domain_training:].to_csv('Domain_classifier_test.csv', index=False)
     # Yes No 
-    YN_classifier.iloc[:row_end_for_YN_training].to_csv('YN_classifier_train.csv', index=False)
-    YN_classifier.iloc[row_end_for_YN_training:].to_csv('YN_classifier_test.csv', index=False)
+    #YN_classifier.iloc[:row_end_for_YN_training].to_csv('YN_classifier_train.csv', index=False)
+    #YN_classifier.iloc[row_end_for_YN_training:].to_csv('YN_classifier_test.csv', index=False)
     # Day 
-    #Day_classifier.iloc[:row_end_for_Day_training].to_csv('Day_classifier_train.csv', index=False)
-    #Day_classifier.iloc[row_end_for_Day_training:].to_csv('Day_classifier_test.csv', index=False)
+    Day_classifier.iloc[:row_end_for_Day_training].to_csv('Day_classifier_train.csv', index=False)
+    Day_classifier.iloc[row_end_for_Day_training:].to_csv('Day_classifier_test.csv', index=False)
 
 
 
 if __name__ == '__main__':
   #300
-  Gen_Classfier_Data(200)
+  Gen_Classfier_Data(1000)
+  print('done')
 
 
