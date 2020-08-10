@@ -50,6 +50,10 @@ def Build_Google_Service():
 
 
 def time_handler(Time):
+
+    if Time is None:
+      return '10am'
+    
     Time = Time.strip()
     non_exist_word = [None, '/', '', ' ']  
     date_word = 'January,February,March,April,May,June,July,August,September,October,November,December'.lower().split(',')
@@ -86,6 +90,7 @@ def time_handler(Time):
 def Get_Start_End_Time(Date, Time):
     Base_time = Date[0]
     Time = time_handler(Time)
+
     # split the confusing word
     key_word_change = {'next':7}
     with_key = False
@@ -104,17 +109,24 @@ def Get_Start_End_Time(Date, Time):
                 Base_time = ''.join(re.split(key, Base_time)) + key_word[key][0]
             Base_time = ''.join(re.split(rm_key, Base_time))
             break
+    
 
     if with_key:
+        print(Base_time)
         start_time = parse(Base_time + ' ' + Time) + timedelta(days = key_word_change[key_change])
     else:
         if 'today' in Base_time:
             start_time = datetime.now() + timedelta(days = key_word[key][1])
-        else:
+            time_ = parse(Time)
+            start_time = start_time.replace(hour = time_.hour, minute = time_.minute)
+            
+        elif 'Saturday' in Base_time:
             start_time = parse(Base_time + ' ' + Time) + timedelta(days = key_word[key][1])
-    
+        else :
+            start_time = parse(Base_time + ' ' + Time) 
+
     # Change time if needed
-    if Date[1] is None or Date[2] is None:
+    if Date[1] is not None or Date[2] is not None:
         day_unit = {'day': 1, 'week' : 7}
 
         delay = True if Date[1] else False
@@ -181,15 +193,15 @@ def Create_event (Event, timeZone = 'Asia/Brunei'):
     }
 
     
-    #event = service.events().insert(calendarId = creds_id, body = event).execute()
-    #print (('Event created: {}').format(event.get('htmlLink')))
+    event = service.events().insert(calendarId = creds_id, body = event).execute()
+    print (('Event created: {}').format(event.get('htmlLink')))
     
 
 if __name__ == '__main__':
     Event = dict()
-    Event['Activity'] = 'study'
-    Event['Day'] = tuple(('tomorrow', (3,'days'), None ))
-    Event['Time'] = '  '
-    Event['Place'] = 'Elephant Mountain'
+    Event['Activity'] = 'movie'
+    Event['Day'] = tuple(('8/23', None, None ))
+    Event['Time'] = None
+    Event['Place'] = None
 
     Create_event(Event)
