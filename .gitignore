@@ -1,6 +1,9 @@
 *outputs/
 *cache_dir/
 result/
+runs/
+.gitignore.swp
+Bert_QA2/
 .DS_Store
 *.json
 *.csv

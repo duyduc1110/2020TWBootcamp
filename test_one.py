@@ -1,6 +1,5 @@
 
 
-
 train_args = {
     'learning_rate': 3e-5,
     'num_train_epochs': 1,
@@ -31,9 +30,6 @@ train_args = {
 }
 
 
-
-
-
 import json
 import os
 import sys
@@ -45,7 +41,8 @@ from simpletransformers.question_answering import QuestionAnsweringModel
 # Create the QuestionAnsweringModel
 model = QuestionAnsweringModel(
     "bert",
-    "outputs/",
+    #"outputs/",
+    "Bert_QA2/",
     args = train_args
 )
 #rain_path = sys.argv[1]
@@ -64,19 +61,23 @@ model = QuestionAnsweringModel(
 #print(text)
 
 print("-------------------")
-print('hello world yo')
-msg = ["Let's have lunch tomorrow.", "where should we meet?", "How about xinyi?", "Sure.", "Can we meet the day after tomorrow?", "Sure."]
-m = ["Let's have lunch tomorrow.", 'Sure', "where should we meet?", "How about xinyi?", "Sure.", "Can we meet two days later?", "Sorry, I cant go."]
-string =  ""
-for i in m:
-    string += ' ' + i 
+print('hello world2')
+
+# DST-test format (?)
+# msg = ["Let's have lunch tomorrow.", "where should we meet?", "How about xinyi?", "Sure.", "Can we meet the day after tomorrow?", "Sure."]
+# m = ["Let's have lunch tomorrow.", 'Sure', "where should we meet?", "How about xinyi?", "Sure.", "Can we meet two days later?", "Sorry, I cant go."]
+# string =  ""
+# for i in m:
+#     string += ' ' + i 
+
+one_str = "Hey. Are you free on Tuesday? Yes. Do you want to go rock climbing? Sure! Where should we meet? How about the theme park? Why not Daan Park? Or Elephant Mountain? I've never been to Daan Park. Let's go there instead. OK. See you there!"
 # Making predictions using the model.
 question_type = ['what are we going to do?', 'what day?', 'what time?', 'where are we going?' ]
 
 def get_to_predict(num):
     to_predict =  [
     {
-        "context": string, 
+        "context": one_str, 
         "qas": [{"question": question_type[i], "id": str(i)}],
     }
     for i in range(num)

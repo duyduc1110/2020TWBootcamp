@@ -1,6 +1,5 @@
 
 
-
 train_args = {
     'learning_rate': 3e-5,
     'num_train_epochs': 1,
@@ -27,7 +26,8 @@ train_args = {
   "output_past": True,
   "pad_token_id": 0,
   "type_vocab_size": 2,
-  "vocab_size": 30522
+  "vocab_size": 30522,
+  "output_dir": "Bert_QA2/"
 }
 
 

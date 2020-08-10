@@ -1,5 +1,4 @@
 
-
 train_args = {
     'learning_rate': 3e-5,
     'num_train_epochs': 1,
@@ -41,7 +40,7 @@ from simpletransformers.question_answering import QuestionAnsweringModel
 # Create the QuestionAnsweringModel
 model = QuestionAnsweringModel(
     "bert",
-    "outputs/",
+    "Bert_QA2/",
     args = train_args
 )
 train_path = sys.argv[1]
@@ -52,9 +51,9 @@ train_path = sys.argv[1]
 # Evaluate the model. (Being lazy and evaluating on the train data itself)
 #result, text = model.eval_model("data/train.json")
 result, text = model.eval_model(train_path)
-with open('result_test.json','w') as f:
+with open('./result_test_470.json','w') as f:
     json.dump(result, f)
-with open('text_test.json', 'w') as f:
+with open('./text_test_470.json', 'w') as f:
     json.dump(text, f)
 print(result)
 print(text)

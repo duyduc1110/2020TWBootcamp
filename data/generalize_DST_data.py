@@ -7,7 +7,7 @@ import numpy as np
 import copy
 from sklearn.utils import shuffle
 import pickle
-#from f_trans import gen2json_DST
+from f_trans import gen2json_DST
 import sys
 
 
@@ -26,25 +26,28 @@ useful_data = pd.read_csv('DST_data.csv')
 
 ##### Activity #####
 to_Buy = useful_data['Food'].values.tolist() + useful_data['Drink'].values.tolist() + useful_data['Clothes'].values.tolist() + useful_data['Products'].values.tolist()
-activity = ['go buy ' + item for item in to_Buy] + ['see ' + item for item in useful_data['Movie'].values.tolist()] + ['go get ' + item for item in to_Buy]
+activity = ['go buy ' + item for item in to_Buy] + ['see ' + item for item in useful_data['Movie'].values.tolist()] + ['go get ' + item for item in to_Buy] + to_Buy
 activity += ['catch up',
  'do something',
  'go to a party',
- 'go bowling',
+ 'bowling',
  'go somewhere',
  'grab lunch',
  'grab coffee',
- 'go ice skating',
+ 'ice skating',
  'hang out',
  'see a game',
  'see a concert',
  'see a movie',
  'see a play',
  'watch a movie',
- 'go rafting',
- 'bake',
- 'go swimming',
- 'go surfing']
+ 'rafting',
+ 'baking',
+ 'swimming',
+ 'surfing',
+ 'fishing',
+ 'walking',
+ 'exercising']
 
 
 ##### Day #####
@@ -61,7 +64,7 @@ day = ['today',
 
 day_unit = ['day', 'month', ' week', 'year']
 day_list = [str(i+1) + ' ' + unit for unit in day_unit for i in range(10)]
-day_list += [i + ' ' + unit for unit in day_unit for i in ['one, two, three, four, five, six, seven, eihgt, nine, ten, eleven, twelve']]
+day_list += [i + ' ' + unit for unit in day_unit for i in 'one, two, three, four, five, six, seven, eihgt, nine, ten, eleven, twelve'.split(',')]
 
 delay_head = [ 'later', 'after']
 
@@ -74,7 +77,7 @@ delay_behind = [ 'delay for ',
 'defer'
 ]
 
-early_head = [ 'pirior.',
+early_head = [ 'prior.',
 'before.',
 'earlier.',
 'ahead.',
@@ -91,6 +94,7 @@ early_behind = [
 delay = [d + ' ' + item  for item in delay_head for d in day_list] + [item + ' ' + d  for item in delay_behind for d in day_list]
 early = [d + ' ' + item  for item in early_head for d in day_list] + [item + ' ' + d  for item in early_behind for d in day_list]
 change = day
+print(change)
 
 
 ##### Place #####
@@ -186,55 +190,61 @@ def construct_end_component(activity_, delay_, early_, change_, place_):
 
   end_component_list = []
   end_component_label_list = []
+  QA_component_label_list = []
+  QA_json_label_helper = []
 
   for build in build_list:
     sub_list = []
     sub_build = [0, 0, 0, 0, 0]
+    sub_QA = [['']*3]
+
     if build[1]:
       sub_list.append(to_sample[0])
+      sub_QA[0][0] = to_sample[0]
       sub_build[1] = 1
 
     if build[3]:
       sub_list.append(to_sample[2])
+      sub_QA[0][2] = to_sample[2]
       sub_build[3] = 1
 
     if build[2]:
       return_list = []
+      return_QA_list = []
       sub_build[2] = 1
-      for item in to_sample[1]:
-        return_list.append(sub_list + [item])
+      tmp_sub_QA_list = []
+      sub_QA = [sub_QA[0].copy() for _ in range(len(to_sample[1]))]
+
+      for i in range(len(to_sample[1])):
+        return_list.append(sub_list + [to_sample[1][i]])
         end_component_label_list.append(sub_build)
+        QA_json_label_helper.append(sub_build[1:-1])
+        sub_QA[i][1] = to_sample[1][i]
       sub_list = return_list
     
     else:
       end_component_label_list.append(sub_build)
-    end_component_list.append(sub_list)
+      QA_json_label_helper.append(sub_build[1:-1])
 
-  temp_list = []
-  for i in range(len(end_component_list)):
+    
+    QA_component_label_list += sub_QA
+
+  end_component_list = []
+  
+  #print(QA_component_label_list)
+  for i in range(len(QA_component_label_list)):
     # Shuffle first
-    random.shuffle(end_component_list[i])
-
-    # contain day
-    if len(end_component_list[i]) == 3:
-      for item in end_component_list[i]:
-        string = ''
-        for sub_item in item:
-          string += sub_item + ' '
-        temp_list.append(string)
-
-    # Not contain delay
-    else:
-      string = ''
-      for n in end_component_list[i]:
-        string += n + ' '
-      temp_list.append(string)
-  end_component_list = temp_list
+    random.shuffle(QA_component_label_list[i])
+    string = ''
+    for item in QA_component_label_list[i]:
+      string += item + ' '
+    end_component_list.append(string)
 
   # format like ('go buy Kool-Aid go Garland to advance 1  week ', [0, 1, 1, 1, 0])
-  return list(zip(end_component_list, end_component_label_list))
+  return list(zip(end_component_list, end_component_label_list)), QA_component_label_list, QA_json_label_helper
 
-# null: unsuccessful
+# output format
+# Sentence , label
 def Gen_Classfier_Data(rows):
     if rows == 0: return  {"train_data" : [],  "label" : []}
     data = []
@@ -242,15 +252,16 @@ def Gen_Classfier_Data(rows):
     train_data_YN_classifier = []
     train_data_Day_classifier = []
     train_data_QA = []
-    Question_dict = {'Activity' : 'what are we going to do?', 'Day' : 'what day?', 'Place' : 'where are we going?', 'Logic' : 'Yes or No?'}
+    Question_dict = {'Activity' : 'what are we going to do?', 'Day' : 'what day?', 'Place' : 'where are we going?'}
     
     for _ in range(rows):
       # Sample from data
       create_event_ , other_opening_, opening_where_, opening_when_, activity_, delay_, early_, change_, place_ , yes_ , no_ , meaningless_  = get_sample_component()
       
-      # format like ('go buy Kool-Aid go Garland to advance 1  week ', [0, 1, 1, 1, 0]) 
-      end_component = construct_end_component(activity_, delay_, early_, change_, place_)
-      
+      # end_component format like ('go buy Kool-Aid go Garland to advance 1  week ', [0, 1, 1, 1, 0]) 
+      # QA_component_label_list format [['go buy LEonidas', '', ''], ['', 'the day after tomorrow', ''],..]
+      end_component,  QA_component_label_list, QA_json_label_helper = construct_end_component(activity_, delay_, early_, change_, place_)
+
       # Get the label with the opening
       opening_label_list = get_opening_label()
 
@@ -258,8 +269,9 @@ def Gen_Classfier_Data(rows):
       open_component = list(zip([create_event_ , other_opening_, opening_where_, opening_when_, yes_ , no_], opening_label_list))
 
       # meaningless data
-      train_data_classifier.append([meaningless_, [0, 0, 0, 0, 0]])
-
+      for i in range(3):
+        train_data_classifier.append([random.choice(Sentence_dict['meaningless']), [0, 0, 0, 0, 0]])
+        
       # C  A  D  P  L
       # Make combination
       for open_text, open_label in open_component:
@@ -270,12 +282,19 @@ def Gen_Classfier_Data(rows):
           train_data_classifier.append([open_text + ' ?', [0, 0, 1, 0, 0]])
           train_data_Day_classifier.append([open_text + ' ?', 2])
 
-        for end_text, end_label in end_component:  
+        for end, train_QA_label, json_label_helper in zip(end_component, QA_component_label_list, QA_json_label_helper):  
+          end_text, end_label = end[0], end[1]
+
+          #print(end_text, end_label)
           # if yes/no, no Q
           if yes_ in open_text or no_ in open_text: 
-            train_text = open_text + ' ' + end_text
+            train_text = open_text + ' ' + end_text + '.'
           else:
             train_text = open_text + ' ' + end_text + ' ?'
+
+          QA_label = [{'text': train_text, 'answer_start': train_text.index(text)} for text in train_QA_label]
+          train_data_QA.append([train_text, QA_label, json_label_helper])
+          #rint([train_text, QA_label, json_label_helper])
 
           train_label = []
           for index in range(len(open_label)):
@@ -309,14 +328,21 @@ def Gen_Classfier_Data(rows):
             train_data_classifier.append([train_text, train_label])            
             continue
 
-          if open_text == no_:
+          elif open_text == no_:
             train_data_YN_classifier.append([train_text, 0])
             # append to data classifier
             train_data_classifier.append([train_text, train_label])
             continue
 
-          # if non of the above, still append to data classifier
-          train_data_classifier.append([train_text, train_label])
+          else:
+            # if non of the above, still append to data classifier
+            train_data_classifier.append([train_text, train_label])
+            train_data_YN_classifier.append([train_text, 1])
+
+    # generate QA data
+    train_data_QA = np.array(train_data_QA)
+    train_data_QA = {"train_data" : list(train_data_QA[:,0]),  "label" : list(train_data_QA[:,1]), 'json label': list(train_data_QA[:,2])}
+    gen2json_DST(train_data_QA, 'DST_QA.json')
 
     # shuffle the dataframe then split into trainset, testset                                                                 
     Domain_classifier = shuffle(pd.DataFrame(train_data_classifier, columns = ['text', 'labels']))
@@ -336,11 +362,11 @@ def Gen_Classfier_Data(rows):
 
     # 80% training data, 20% test data
     # Domain lassifier
-    #Domain_classifier.iloc[:row_end_for_Domain_training].to_csv('Domain_classifier_train.csv', index=False)
-    #Domain_classifier.iloc[row_end_for_Domain_training:].to_csv('Domain_classifier_test.csv', index=False)
+    Domain_classifier.iloc[:row_end_for_Domain_training].to_csv('Domain_classifier_train.csv', index=False)
+    Domain_classifier.iloc[row_end_for_Domain_training:].to_csv('Domain_classifier_test.csv', index=False)
     # Yes No 
-    #YN_classifier.iloc[:row_end_for_YN_training].to_csv('YN_classifier_train.csv', index=False)
-    #YN_classifier.iloc[row_end_for_YN_training:].to_csv('YN_classifier_test.csv', index=False)
+    YN_classifier.iloc[:row_end_for_YN_training].to_csv('YN_classifier_train.csv', index=False)
+    YN_classifier.iloc[row_end_for_YN_training:].to_csv('YN_classifier_test.csv', index=False)
     # Day 
     Day_classifier.iloc[:row_end_for_Day_training].to_csv('Day_classifier_train.csv', index=False)
     Day_classifier.iloc[row_end_for_Day_training:].to_csv('Day_classifier_test.csv', index=False)
@@ -349,7 +375,7 @@ def Gen_Classfier_Data(rows):
 
 if __name__ == '__main__':
   #300
-  Gen_Classfier_Data(1000)
-  print('done')
+  Gen_Classfier_Data(200)
+  print('done ~')
 
 

@@ -51,15 +51,30 @@ def gen2json_(inpath, outpath = './data_vx.json', question_type = ['what are we 
     
     data = list(zip(contexts, labels))
     transfer_format(data, outpath)
-    
+
+  
 def gen2json(data, outpath = './data_vx.json', question_type = ['what are we going to do?', 'what day?', 'what time?', 'where are we going?' ]):
-    
-        
+
     contexts = data['train_data']
     labels = data['label']
     
     for i in range(len(labels)):
         labels[i] = list(zip(question_type, labels[i]))
+    
+    data = list(zip(contexts, labels))
+    transfer_format(data, outpath)
+
+def gen2json_DST(data, outpath = './data_vx.json', question_type = ['what are we going to do?', 'what day?', 'where are we going?' ]):
+
+    contexts = data['train_data']
+    labels = data['label']
+    json_label = data['json label']
+    
+    for i in range(len(labels)):
+        sub_labels = []
+        for j in range(len(json_label[i])):
+            sub_labels.append([question_type[j], labels[i][j]])
+        labels[i] = sub_labels
     
     data = list(zip(contexts, labels))
     transfer_format(data, outpath)

@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 from sklearn.utils import shuffle
 
-
+print('Go')
 logging.basicConfig(level=logging.INFO)
 transformers_logger = logging.getLogger("transformers")
 transformers_logger.setLevel(logging.WARNING)

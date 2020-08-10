@@ -64,15 +64,39 @@ def DST_predict(Domain_classifier, YN_classifier, Day_classifier, QA_model, chat
         
     return sentance_to_analyse
 
+def DSTout2dict(sentance_to_analyse):
+    """
+    one sentence to kv_dict
+    
+    output: bool create_event
+            dict kv_dict
+            str  chat
+    """
+    ans = dict()
+    chat = sentance_to_analyse[0][0]
+    items = sentance_to_analyse[0][1]
+    Create_event = False
+    for d in items:
+        if d[0]=='Create_event':
+            Create_event = True
+        elif d[0] == 'Day':
+            ans[d[0]] = d[1:]
+        else:
+            ans[d[0]] = d[1]
+    return Create_event, ans, chat
+
+    
+
 if __name__ == "__main__":
     Domain_classifier = MultiLabelClassificationModel('roberta', 'Domain_classifier_outputs/')
     YN_classifier = ClassificationModel('roberta', 'YN_classifier_outputs/')
     Day_classifier = ClassificationModel('bert', 'Day_classifier_outputs/')
     QA_model = QuestionAnsweringModel('bert', 'outputs/')
 
-    chat_history = ["Let's have lunch tomorrow.", "where should we meet?", "How about xinyi?", "Sure.", "Can we meet 3 days later?", "Sure."]
+    chat_history = ["Hey !", 'sure, see you then']
     #chat_history += [ "what day?", "tomorrow? ", "I can't.", "How about tomorrow?", "That's fine.", "See you there."]
     #chat_history = pd.read_csv("data/struture_Domain_classifier_test.csv")['text'].iloc[:10]
+    print(chat_history)
     DST_predict(Domain_classifier, YN_classifier, Day_classifier, QA_model, chat_history)
 
 
