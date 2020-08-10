@@ -96,20 +96,22 @@ def Get_Start_End_Time(Date, Time):
             break
 
     # Specific time
-    key_word = {'weekend':'Saturday'}
+    key_word = {'weekend':['Saturday', 0], 'today' : ['today', 0], 'tomorrow': ['today', 1], 'the day after tomorrow':['today', 2]}
     key_word_to_remove = ['this', 'that']
     for key in key_word.keys():
         for rm_key in key_word_to_remove:
             if key in Base_time.lower():
-                Base_time = ''.join(re.split(key, Base_time)) + key_word[key]
-
+                Base_time = ''.join(re.split(key, Base_time)) + key_word[key][0]
             Base_time = ''.join(re.split(rm_key, Base_time))
             break
 
     if with_key:
         start_time = parse(Base_time + ' ' + Time) + timedelta(days = key_word_change[key_change])
     else:
-        start_time = parse(Base_time + ' ' + Time)
+        if 'today' in Base_time:
+            start_time = datetime.now() + timedelta(days = key_word[key][1])
+        else:
+            start_time = parse(Base_time + ' ' + Time) + timedelta(days = key_word[key][1])
     
     # Change time if needed
     if Date[1] is None or Date[2] is None:
@@ -179,14 +181,14 @@ def Create_event (Event, timeZone = 'Asia/Brunei'):
     }
 
     
-    event = service.events().insert(calendarId = creds_id, body = event).execute()
-    print (('Event created: {}').format(event.get('htmlLink')))
+    #event = service.events().insert(calendarId = creds_id, body = event).execute()
+    #print (('Event created: {}').format(event.get('htmlLink')))
     
 
 if __name__ == '__main__':
     Event = dict()
     Event['Activity'] = 'study'
-    Event['Day'] = tuple(('on this friday', (3,'days'), None ))
+    Event['Day'] = tuple(('tomorrow', (3,'days'), None ))
     Event['Time'] = '  '
     Event['Place'] = 'Elephant Mountain'
 
